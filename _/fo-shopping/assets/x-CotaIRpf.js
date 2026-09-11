@@ -1,0 +1,1 @@
+import{j as r}from"./client-BLZHgAOY.js";import{I as e}from"./icon-base-CFPnSwGa.js";function i({ref:o,...t}){return r.jsx(e,{ref:o,...t,children:r.jsx("path",{d:"M17 7L7 17M7 7L17 17",stroke:"currentColor",strokeWidth:"1.2",vectorEffect:"non-scaling-stroke",strokeLinecap:"round",strokeLinejoin:"round"})})}export{i as X};
