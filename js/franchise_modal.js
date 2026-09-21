@@ -10,7 +10,7 @@
 (function () {
 	'use strict';
 
-	// 가맹 문의 접수 이메일 (기존 가맹 문의에서 쓰던 주소)
+	// 가맹 문의 접수 이메일 (수신 주소)
 	var INQUIRY_EMAIL = 'Moonjarmedi@gmail.com';
 	var MODAL_ID = 'franchise-inquiry-modal';
 
@@ -110,9 +110,13 @@
 
 		var subject = '[가맹 문의] ' + name;
 		var body = '성함: ' + name + '\n연락처: ' + phone + '\n\n고민 내용:\n' + message;
-		window.location.href = 'mailto:' + INQUIRY_EMAIL +
-			'?subject=' + encodeURIComponent(subject) +
+		// 로그인되어 있는 Gmail 웹 작성창으로 열어 INQUIRY_EMAIL 로 발송한다.
+		// (mailto/기본 메일 클라이언트 종속성 제거)
+		var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1' +
+			'&to=' + encodeURIComponent(INQUIRY_EMAIL) +
+			'&su=' + encodeURIComponent(subject) +
 			'&body=' + encodeURIComponent(body);
+		window.open(gmailUrl, '_blank', 'noopener');
 		closeModal();
 	}
 
