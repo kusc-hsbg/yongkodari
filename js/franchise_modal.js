@@ -12,6 +12,9 @@
 
 	// 가맹 문의 접수 이메일 (수신 주소)
 	var INQUIRY_EMAIL = 'Moonjarmedi@gmail.com';
+	// Web3Forms access key (https://web3forms.com 에서 위 이메일로 가입 후 발급).
+	// 이 키로 폼 입력이 서버 없이 곧바로 이메일로 전송된다.
+	var ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
 	var MODAL_ID = 'franchise-inquiry-modal';
 
 	function injectStyle() {
@@ -52,6 +55,37 @@
 		document.head.appendChild(style);
 	}
 
+	function formHtml() {
+		return '' +
+			'<button type="button" class="fm-close" data-fm-close aria-label="닫기">&times;</button>' +
+			'<h2 class="fm-title">가맹 문의 상담을<br>받아보세요.</h2>' +
+			'<p class="fm-desc">문의 사항을 작성해주시면 고려하여<br>최대한 빠르게 답변 드리겠습니다.</p>' +
+			'<div class="fm-divider"></div>' +
+			'<form class="fm-form">' +
+				'<div class="fm-field">' +
+					'<label class="fm-label" for="fm-name">성함</label>' +
+					'<input class="fm-input" id="fm-name" type="text" autocomplete="name">' +
+				'</div>' +
+				'<div class="fm-field">' +
+					'<label class="fm-label">답변 받으실 연락처</label>' +
+					'<div class="fm-phone">' +
+						'<input class="fm-input" id="fm-phone1" type="tel" inputmode="numeric" maxlength="3">' +
+						'<span>-</span>' +
+						'<input class="fm-input" id="fm-phone2" type="tel" inputmode="numeric" maxlength="4">' +
+						'<span>-</span>' +
+						'<input class="fm-input" id="fm-phone3" type="tel" inputmode="numeric" maxlength="4">' +
+					'</div>' +
+				'</div>' +
+				'<div class="fm-field">' +
+					'<label class="fm-label" for="fm-message">고민 내용</label>' +
+					'<textarea class="fm-input" id="fm-message" rows="3"></textarea>' +
+				'</div>' +
+				'<div class="fm-submit-wrap">' +
+					'<button type="submit" class="fm-submit">작성 완료</button>' +
+				'</div>' +
+			'</form>';
+	}
+
 	function injectModal() {
 		if (document.getElementById(MODAL_ID)) return;
 		var wrap = document.createElement('div');
@@ -59,43 +93,22 @@
 		wrap.setAttribute('role', 'dialog');
 		wrap.setAttribute('aria-modal', 'true');
 		wrap.setAttribute('aria-label', '가맹 문의 상담');
-		wrap.innerHTML = '' +
-			'<div class="fm-overlay" data-fm-close></div>' +
-			'<div class="fm-dialog">' +
-				'<button type="button" class="fm-close" data-fm-close aria-label="닫기">&times;</button>' +
-				'<h2 class="fm-title">가맹 문의 상담을<br>받아보세요.</h2>' +
-				'<p class="fm-desc">문의 사항을 작성해주시면 고려하여<br>최대한 빠르게 답변 드리겠습니다.</p>' +
-				'<div class="fm-divider"></div>' +
-				'<form class="fm-form">' +
-					'<div class="fm-field">' +
-						'<label class="fm-label" for="fm-name">성함</label>' +
-						'<input class="fm-input" id="fm-name" type="text" autocomplete="name">' +
-					'</div>' +
-					'<div class="fm-field">' +
-						'<label class="fm-label">답변 받으실 연락처</label>' +
-						'<div class="fm-phone">' +
-							'<input class="fm-input" id="fm-phone1" type="tel" inputmode="numeric" maxlength="3">' +
-							'<span>-</span>' +
-							'<input class="fm-input" id="fm-phone2" type="tel" inputmode="numeric" maxlength="4">' +
-							'<span>-</span>' +
-							'<input class="fm-input" id="fm-phone3" type="tel" inputmode="numeric" maxlength="4">' +
-						'</div>' +
-					'</div>' +
-					'<div class="fm-field">' +
-						'<label class="fm-label" for="fm-message">고민 내용</label>' +
-						'<textarea class="fm-input" id="fm-message" rows="3"></textarea>' +
-					'</div>' +
-					'<div class="fm-submit-wrap">' +
-						'<button type="submit" class="fm-submit">작성 완료</button>' +
-					'</div>' +
-				'</form>' +
-			'</div>';
+		wrap.innerHTML = '<div class="fm-overlay" data-fm-close></div><div class="fm-dialog"></div>';
 		document.body.appendChild(wrap);
 
 		wrap.addEventListener('click', function (e) {
 			if (e.target.hasAttribute('data-fm-close')) closeModal();
 		});
-		wrap.querySelector('.fm-form').addEventListener('submit', onSubmit);
+		// submit 이벤트는 버블링되므로 wrap 에 위임한다(폼을 새로 그려도 유지됨).
+		wrap.addEventListener('submit', function (e) {
+			if (e.target && e.target.classList.contains('fm-form')) onSubmit(e);
+		});
+	}
+
+	// 열 때마다 폼을 새로 그려 이전 입력/전송완료 상태를 초기화한다.
+	function renderForm() {
+		var dialog = document.querySelector('#' + MODAL_ID + ' .fm-dialog');
+		if (dialog) dialog.innerHTML = formHtml();
 	}
 
 	function onSubmit(e) {
@@ -108,16 +121,48 @@
 		if (!phone) { alert('답변 받으실 연락처를 입력해주세요.'); return; }
 		if (!message) { alert('고민 내용을 입력해주세요.'); return; }
 
-		var subject = '[가맹 문의] ' + name;
-		var body = '성함: ' + name + '\n연락처: ' + phone + '\n\n고민 내용:\n' + message;
-		// 로그인되어 있는 Gmail 웹 작성창으로 열어 INQUIRY_EMAIL 로 발송한다.
-		// (mailto/기본 메일 클라이언트 종속성 제거)
-		var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1' +
-			'&to=' + encodeURIComponent(INQUIRY_EMAIL) +
-			'&su=' + encodeURIComponent(subject) +
-			'&body=' + encodeURIComponent(body);
-		window.open(gmailUrl, '_blank', 'noopener');
-		closeModal();
+		if (!ACCESS_KEY || ACCESS_KEY.indexOf('YOUR_') === 0) {
+			alert('전송 설정이 아직 완료되지 않았습니다. 관리자에게 문의해주세요.');
+			return;
+		}
+
+		var btn = document.querySelector('#' + MODAL_ID + ' .fm-submit');
+		if (btn) { btn.disabled = true; btn.textContent = '전송 중...'; }
+
+		// 서버 없이 Web3Forms 를 통해 곧바로 INQUIRY_EMAIL 로 이메일 전송한다.
+		fetch('https://api.web3forms.com/submit', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+			body: JSON.stringify({
+				access_key: ACCESS_KEY,
+				subject: '[가맹 문의] ' + name,
+				from_name: '연코다리 가맹 문의',
+				'성함': name,
+				'연락처': phone,
+				'고민 내용': message
+			})
+		}).then(function (r) {
+			return r.json();
+		}).then(function (res) {
+			if (res && res.success) {
+				showSuccess();
+			} else {
+				throw new Error((res && res.message) || '전송 실패');
+			}
+		}).catch(function (err) {
+			alert('전송에 실패했습니다. 잠시 후 다시 시도해주세요.\n(' + err.message + ')');
+			if (btn) { btn.disabled = false; btn.textContent = '작성 완료'; }
+		});
+	}
+
+	function showSuccess() {
+		var dialog = document.querySelector('#' + MODAL_ID + ' .fm-dialog');
+		if (!dialog) return;
+		dialog.innerHTML = '' +
+			'<button type="button" class="fm-close" data-fm-close aria-label="닫기">&times;</button>' +
+			'<h2 class="fm-title">문의가 전송되었습니다.</h2>' +
+			'<p class="fm-desc">최대한 빠르게 답변 드리겠습니다.<br>감사합니다.</p>' +
+			'<div class="fm-submit-wrap"><button type="button" class="fm-submit" data-fm-close>확인</button></div>';
 	}
 
 	function val(id) {
@@ -128,6 +173,7 @@
 	function openModal() {
 		injectStyle();
 		injectModal();
+		renderForm();
 		var modal = document.getElementById(MODAL_ID);
 		modal.classList.add('is-open');
 		document.body.style.overflow = 'hidden';
