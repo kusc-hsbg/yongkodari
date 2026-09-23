@@ -11,7 +11,7 @@
 	'use strict';
 
 	// 가맹 문의 접수 이메일 (수신 주소)
-	var INQUIRY_EMAIL = 'Moonjarmedi@gmail.com';
+	var INQUIRY_EMAIL = 'yeonkodari@gmail.com';
 	// Web3Forms access key (https://web3forms.com 에서 위 이메일로 가입 후 발급).
 	// 이 키로 폼 입력이 서버 없이 곧바로 이메일로 전송된다.
 	var ACCESS_KEY = 'YOUR_WEB3FORMS_ACCESS_KEY';
